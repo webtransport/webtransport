@@ -9,6 +9,8 @@ import (
 	"syscall/js"
 )
 
+// Session represents a WebTransport connection that can open and accept
+// bidirectional streams.
 type Session struct {
 	transport js.Value
 	incoming  js.Value
@@ -37,6 +39,7 @@ func newSession(transport js.Value, addr string) (*Session, error) {
 	return s, nil
 }
 
+// Accept waits for and returns the next incoming bidirectional stream.
 func (s *Session) Accept(ctx context.Context) (net.Conn, error) {
 	result, err := awaitPromise(ctx, s.incoming.Call("read"))
 	if err != nil {
@@ -51,6 +54,7 @@ func (s *Session) Accept(ctx context.Context) (net.Conn, error) {
 	return newConn(result.Get("value"), s.addr), nil
 }
 
+// Open creates and returns a new outgoing bidirectional stream.
 func (s *Session) Open(ctx context.Context) (net.Conn, error) {
 	stream, err := awaitPromise(ctx, s.transport.Call("createBidirectionalStream"))
 	if err != nil {
@@ -62,6 +66,7 @@ func (s *Session) Open(ctx context.Context) (net.Conn, error) {
 	return newConn(stream, s.addr), nil
 }
 
+// Close closes the session and releases associated resources.
 func (s *Session) Close() error {
 	s.cancel()
 	s.transport.Call("close")
@@ -71,6 +76,8 @@ func (s *Session) Close() error {
 	return nil
 }
 
+// Context returns a context that is canceled when the underlying transport is
+// closed.
 func (s *Session) Context() context.Context {
 	return s.ctx
 }
