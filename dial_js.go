@@ -9,6 +9,8 @@ import (
 	"syscall/js"
 )
 
+// Dial connects to a WebTransport endpoint and returns a session once the
+// transport is ready.
 func Dial(ctx context.Context, addr string) (*Session, error) {
 	u, err := url.Parse(addr)
 	if err != nil {

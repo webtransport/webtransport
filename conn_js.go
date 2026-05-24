@@ -16,6 +16,7 @@ import (
 
 var _ net.Conn = (*Conn)(nil)
 
+// Conn wraps a WebTransport bidirectional stream and implements net.Conn.
 type Conn struct {
 	stream js.Value
 	reader js.Value
@@ -38,6 +39,7 @@ func newConn(stream js.Value, addr string) *Conn {
 	}
 }
 
+// Read reads data from the stream.
 func (c *Conn) Read(p []byte) (int, error) {
 	c.mu.Lock()
 	if c.closed {
@@ -77,6 +79,7 @@ func (c *Conn) Read(p []byte) (int, error) {
 	return n, nil
 }
 
+// Write writes data to the stream.
 func (c *Conn) Write(p []byte) (int, error) {
 	c.mu.Lock()
 	if c.closed {
@@ -97,6 +100,7 @@ func (c *Conn) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// Close closes both the read and write sides of the stream.
 func (c *Conn) Close() error {
 	c.mu.Lock()
 	if c.closed {
@@ -111,10 +115,13 @@ func (c *Conn) Close() error {
 	return errors.Join(normalizeStreamError(errCancel), normalizeStreamError(errClose))
 }
 
+// LocalAddr returns the local network address.
 func (c *Conn) LocalAddr() net.Addr { return c.addr }
 
+// RemoteAddr returns the remote network address.
 func (c *Conn) RemoteAddr() net.Addr { return c.addr }
 
+// SetDeadline sets both read and write deadlines associated with the connection.
 func (c *Conn) SetDeadline(t time.Time) error {
 	if err := c.SetReadDeadline(t); err != nil {
 		return err
@@ -122,6 +129,7 @@ func (c *Conn) SetDeadline(t time.Time) error {
 	return c.SetWriteDeadline(t)
 }
 
+// SetReadDeadline sets the deadline for future Read calls.
 func (c *Conn) SetReadDeadline(t time.Time) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -129,6 +137,7 @@ func (c *Conn) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
+// SetWriteDeadline sets the deadline for future Write calls.
 func (c *Conn) SetWriteDeadline(t time.Time) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -136,11 +145,13 @@ func (c *Conn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
+// CloseRead closes the read side of the stream.
 func (c *Conn) CloseRead() error {
 	_, err := awaitPromise(context.Background(), c.reader.Call("cancel"))
 	return err
 }
 
+// CloseWrite closes the write side of the stream.
 func (c *Conn) CloseWrite() error {
 	_, err := awaitPromise(context.Background(), c.writer.Call("close"))
 	return err
